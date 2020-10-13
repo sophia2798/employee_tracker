@@ -27,11 +27,14 @@ connection.connect(function (err) {
 
 // SET EMTPY GLOBAL ARRAYS TO USE FOR LISTS
 let departmentArray = [];
+let departmentWithID = [];
 connection.query("SELECT * FROM employee_DB.department",function(err,data) {
     if (err) throw err;
     else {
         for (var i=0;i<data.length;i++) {
             departmentArray.push(data[i].name);
+            let id = data[i].id + '. ' + data[i].name;
+            departmentWithID.push(id);
         };
     };
 });
@@ -95,6 +98,46 @@ function askQuestions() {
                     return false;
                 }
             }
+        },
+        {
+            type:"input",
+            message:"What is the title of the new role?",
+            name:"role_title",
+            when:function(answers){
+                if (answers.action === "Add Role") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"number",
+            message:"What is the salary of the new role?",
+            name:"role_salary",
+            when:function(answers){
+                if (answers.action === "Add Role") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"list",
+            message:"To what department does the new role belong?",
+            choices:departmentWithID,
+            name:"role_department",
+            when:function(answers){
+                if (answers.action === "Add Role") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
         }
     ]).then(function(answers){
         switch (answers.action) {
@@ -109,6 +152,10 @@ function askQuestions() {
                 break;
             case "Add Department":
                 addDepartment(answers.new_department);
+                break;
+            case "Add Role":
+                let relatedID = answers.role_department.replace(/\D/g, "");
+                addRole(answers.role_title,answers.role_salary,relatedID);
                 break;
             default:
                 console.log("Thank you for using the Employee Tracker!");
@@ -157,7 +204,20 @@ function addDepartment(name) {
         }
         else {
             console.log(`You have successfully added the ${name} department!`);
-            console.table(data);
+            askQuestions();
+        }
+    })
+};
+
+function addRole(title,salary,department_id) {
+    connection.query("INSERT INTO employee_DB.role (title,salary,department_id) VALUE (?,?,?)",[title,salary,department_id],function(err,data) {
+        if (err) throw err;
+        if (title.length > 30) {
+            console.log("The role title is too long. Please try again.");
+            askQuestions();
+        }
+        else {
+            console.log(`You have successfully added the ${title} role!`);
             askQuestions();
         }
     })
