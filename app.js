@@ -1,6 +1,7 @@
 // DEPENDENCIES
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+const figlet = require("figlet");
 
 // CREATE VARIABLE FOR MYSQL CONNECTION
 var connection = mysql.createConnection({
@@ -13,16 +14,27 @@ var connection = mysql.createConnection({
     user: "root",
 
     // Your password
-    password: "hegt.hegt",
+    password: "password",
     database: "employee_DB"
+});
+
+// ASCII ART
+let art = "";
+figlet('Employee Tracker', {font:'Big'},function(err, data) {
+    if (err) {
+        throw err;
+    }
+    art = data;
 });
 
 // CONNECTION AND CONNECTION ID
 connection.connect(function (err) {
     if (err) throw err;
+    console.log(art);
     console.log(`connected as id ${connection.threadId}`);
     askQuestions();
 });
+
 
 // SET EMTPY GLOBAL ARRAYS TO USE FOR LISTS
 let departmentArray = [];
