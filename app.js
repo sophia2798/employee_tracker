@@ -82,6 +82,19 @@ function askQuestions() {
                     return false;
                 }
             }
+        },
+        {
+            type:"input",
+            message:"What is the name of the new department?",
+            name:"new_department",
+            when:function(answers){
+                if (answers.action === "Add Department") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
         }
     ]).then(function(answers){
         switch (answers.action) {
@@ -93,6 +106,9 @@ function askQuestions() {
                 break;
             case "View All Employees by ROLE":
                 allEmployeeRole(answers.employee_role);
+                break;
+            case "Add Department":
+                addDepartment(answers.new_department);
                 break;
             default:
                 console.log("Thank you for using the Employee Tracker!");
@@ -130,4 +146,19 @@ function allEmployeeRole(role) {
         askQuestions();
         }
     });
+};
+
+function addDepartment(name) {
+    connection.query("INSERT INTO employee_DB.department (name) VALUE (?)",name,function(err,data) {
+        if (err) throw err;
+        if (name.length > 30) {
+            console.log("The department name is too long. Please try again.");
+            askQuestions();
+        }
+        else {
+            console.log(`You have successfully added the ${name} department!`);
+            console.table(data);
+            askQuestions();
+        }
+    })
 };
