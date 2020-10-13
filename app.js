@@ -36,6 +36,16 @@ connection.query("SELECT * FROM employee_DB.department",function(err,data) {
     };
 });
 
+let rolesArray = [];
+connection.query("SELECT * FROM employee_DB.role",function(err,data) {
+    if (err) throw err;
+    else {
+        for (var j=0;j<data.length;j++) {
+            rolesArray.push(data[j].title);
+        };
+    };
+});
+
 
 function askQuestions() {
     inquirer.prompt([
@@ -58,6 +68,20 @@ function askQuestions() {
                     return false;
                 }
             }
+        },
+        {
+            type:"list",
+            message:"Which role would you like to view?",
+            choices:rolesArray,
+            name:"employee_role",
+            when:function(answers){
+                if (answers.action === "View All Employees by ROLE") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
         }
     ]).then(function(answers){
         switch (answers.action) {
@@ -65,7 +89,10 @@ function askQuestions() {
                 allEmployees();
                 break;
             case "View All Employees by DEPARTMENT":
-                employeeDepartment(answers.employee_department);
+                allEmployeeDepartment(answers.employee_department);
+                break;
+            case "View All Employees by ROLE":
+                allEmployeeRole(answers.employee_role);
                 break;
             default:
                 console.log("Thank you for using the Employee Tracker!");
@@ -80,13 +107,27 @@ function allEmployees() {
         if (err) throw err;
         console.table(data);
         askQuestions();
-    })
+    });
 };
 
-function employeeDepartment(department) {
+function allEmployeeDepartment(department) {
     connection.query("SELECT employee.first_name AS First_Name, employee.last_name AS Last_Name, role.title AS Role, role.salary AS Salary, department.name AS Department, CONCAT(e.first_name,' ',e.last_name) AS Manager FROM employee INNER JOIN role ON role.id = employee.role_id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee e ON employee.manager_id = e.id WHERE department.name = ?",department,function(err,data){
         if (err) throw err;
         console.table(data);
         askQuestions();
-    })
+    });
+};
+
+function allEmployeeRole(role) {
+    connection.query("SELECT employee.first_name AS First_Name, employee.last_name AS Last_Name, role.title AS Role, role.salary AS Salary, department.name AS Department, CONCAT(e.first_name,' ',e.last_name) AS Manager FROM employee INNER JOIN role ON role.id = employee.role_id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee e ON employee.manager_id = e.id WHERE role.title = ?",role,function(err,data){
+        if (err) throw err;
+        if (data.length === 0) {
+            console.log("No one currently holds this role");
+            askQuestions();
+        }
+        else {
+        console.table(data);
+        askQuestions();
+        }
+    });
 };
