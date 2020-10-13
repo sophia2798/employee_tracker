@@ -1,7 +1,6 @@
 // DEPENDENCIES
 const mysql = require("mysql");
 const inquirer = require("inquirer");
-const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require("constants");
 
 // CREATE VARIABLE FOR MYSQL CONNECTION
 var connection = mysql.createConnection({
@@ -40,14 +39,28 @@ connection.query("SELECT * FROM employee_DB.department",function(err,data) {
 });
 
 let rolesArray = [];
+let rolesWithID = [];
 connection.query("SELECT * FROM employee_DB.role",function(err,data) {
     if (err) throw err;
     else {
         for (var j=0;j<data.length;j++) {
             rolesArray.push(data[j].title);
+            let id = data[j].id + '. ' + data[j].title;
+            rolesWithID.push(id);
         };
     };
 });
+
+let employeesWithID = ["N/A"];
+connection.query("SELECT * FROM employee_DB.employee",function(err,data){
+    if (err) throw err;
+    else {
+        for (var k=0;k<data.length;k++) {
+        let id = data[k].id + '. ' + data[k].first_name + ' ' + data[k].last_name;
+        employeesWithID.push(id);
+        }
+    };
+})
 
 
 function askQuestions() {
@@ -138,6 +151,60 @@ function askQuestions() {
                     return false;
                 }
             }
+        },
+        {
+            type:"input",
+            message:"What is the new employee's first name?",
+            name:"first_name",
+            when:function(answers){
+                if (answers.action === "Add Employee") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"input",
+            message:"What is the new employee's last name?",
+            name:"last_name",
+            when:function(answers){
+                if (answers.action === "Add Employee") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"list",
+            message:"What is the new employee's role?",
+            choices:rolesWithID,
+            name:"new_employee_role",
+            when:function(answers){
+                if (answers.action === "Add Employee") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"list",
+            message:"Please input the ID of the employee's manager (optional)",
+            name:"employee_manager",
+            choices:employeesWithID,
+            when:function(answers){
+                if (answers.action === "Add Employee") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
         }
     ]).then(function(answers){
         switch (answers.action) {
@@ -156,6 +223,17 @@ function askQuestions() {
             case "Add Role":
                 let relatedID = answers.role_department.replace(/\D/g, "");
                 addRole(answers.role_title,answers.role_salary,relatedID);
+                break;
+            case "Add Employee":
+                let manager = "";
+                let roleID = answers.new_employee_role.replace(/\D/g, "");
+                if (answers.employee_manager === "N/A") {
+                    manager = null;
+                }
+                else {
+                    manager = answers.employee_manager.replace(/\D/g, "");
+                }
+                addEmployee(answers.first_name,answers.last_name,roleID,manager);
                 break;
             default:
                 console.log("Thank you for using the Employee Tracker!");
@@ -218,6 +296,20 @@ function addRole(title,salary,department_id) {
         }
         else {
             console.log(`You have successfully added the ${title} role!`);
+            askQuestions();
+        }
+    })
+};
+
+function addEmployee(first,last,role_id,manager_id) {
+    connection.query("INSERT INTO employee_DB.employee (first_name, last_name, role_id, manager_id) VALUE (?,?,?,?)",[first,last,role_id,manager_id],function(err,data) {
+        if (err) throw err;
+        if (first.length > 30 || last.length > 30) {
+            console.log("The new employee's name is too long. Please try again.");
+            askQuestions();
+        }
+        else {
+            console.log(`You have successfully added the ${first} ${last} as a new employee!`);
             askQuestions();
         }
     })
