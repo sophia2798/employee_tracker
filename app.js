@@ -62,13 +62,13 @@ connection.query("SELECT * FROM employee_DB.employee",function(err,data){
     };
 })
 
-
+// MAIN QUESTION FUNCTION 
 function askQuestions() {
     inquirer.prompt([
         {
             type:"list",
             message:"What would you like to do?",
-            choices:["View All Employees","View All Employees by DEPARTMENT","View All Employees by ROLE","Add Employee","Add Department","Add Role","Update Employee","Quit"],
+            choices:["View All Employees","View All Employees by DEPARTMENT","View All Employees by ROLE","Add Employee","Add Department","Add Role","Update Employee Role","Quit"],
             name:"action"
         },
         {
@@ -205,7 +205,35 @@ function askQuestions() {
                     return false;
                 }
             }
-        }
+        },
+        {
+            type:"list",
+            message:"Which employee's role would you like to update?",
+            name:"change_employee_role",
+            choices:employeesWithID,
+            when:function(answers){
+                if (answers.action === "Update Employee Role") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        },
+        {
+            type:"list",
+            message:"What is their updated role?",
+            choices:rolesWithID,
+            name:"updated_employee_role",
+            when:function(answers){
+                if(answers.action === "Update Employee Role" && answers.change_employee_role !== "") {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+         }
     ]).then(function(answers){
         switch (answers.action) {
             case "View All Employees":
@@ -235,6 +263,11 @@ function askQuestions() {
                 }
                 addEmployee(answers.first_name,answers.last_name,roleID,manager);
                 break;
+            case "Update Employee Role":
+                let RoleID = answers.updated_employee_role.replace(/\D/g, "");
+                let employeeID = answers.change_employee_role.replace(/\D/g, "");
+                updateEmployeeRole(RoleID,employeeID);
+                break;
             default:
                 console.log("Thank you for using the Employee Tracker!");
                 connection.end();
@@ -243,6 +276,8 @@ function askQuestions() {
     })
 };
 
+
+// QUERY FUNCTIONS
 function allEmployees() {
     connection.query("SELECT employee.first_name AS First_Name, employee.last_name AS Last_Name, role.title AS Role, role.salary AS Salary, department.name AS Department, CONCAT(e.first_name,' ',e.last_name) AS Manager FROM employee INNER JOIN role ON role.id = employee.role_id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee e ON employee.manager_id = e.id ORDER BY employee.id",function(err,data){
         if (err) throw err;
@@ -310,6 +345,17 @@ function addEmployee(first,last,role_id,manager_id) {
         }
         else {
             console.log(`You have successfully added the ${first} ${last} as a new employee!`);
+            askQuestions();
+        }
+    })
+};
+
+
+function updateEmployeeRole(role_id,employee_id) {
+    connection.query(`UPDATE employee_DB.employee SET role_id = ? WHERE id = ?`,[role_id,employee_id],function(err,data){
+        if (err) throw err;
+        else {
+            console.log("You have successfully updated this employee's role!");
             askQuestions();
         }
     })
